@@ -1,0 +1,22 @@
+navigation:
+  admin:
+    label: Admin
+    title: Admin
+    route: default
+    module: admin
+    controller: index
+    action: index
+    params:
+      type: laminat
+    order: 1
+    pages:
+      page1:
+        label: Список
+        title: Список
+        route: admin-branch
+        module: admin
+        controller: branch
+        action: index
+        params:
+          type: laminat
+        order: 1

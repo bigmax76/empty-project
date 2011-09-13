@@ -1,0 +1,14 @@
+# App Resource (lazy load)
+# (отступы имеют значения, табуляция не допускается)
+
+parameters:
+ 
+services:
+  pdo: 
+    class      : App_Model_Pdo_Adapter
+    arguments  : 
+      dsn      : mysql:host=localhost;dbname=fshop
+      username : max
+      password : 
+      options  : 
+        <?=PDO::ATTR_PERSISTENT?> : true
