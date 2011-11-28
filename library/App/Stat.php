@@ -4,7 +4,7 @@ class App_Stat
 	static protected $start_time  = null;		
 	static protected $checkpoints = null;	
 	static protected $is_started  = false;
-	static protected $is_disable  = false;
+	static protected $is_disable  = true; // по умолчанию отключена
 	static protected $decimals    = 4;    // число знаков после запятой
 	
 	/**
@@ -21,8 +21,8 @@ class App_Stat
 	/**
      * Отключает вывод статистики
      */
-    public static function disable() {
-    	self::$is_disable = true;
+    public static function enable() {
+    	self::$is_disable = false;
     } 
 	
 	/**
@@ -53,8 +53,9 @@ class App_Stat
 		if(!self::$is_disable || APPLICATION_ENV == 'localhost') { 
 		    self::showCheckPointInfo();
 		    self::showDbInfo();
+		    echo '<div style="clear:both"></div>';
 		}
-		echo '<div style="clear:both"></div>';
+		
 	}
 	
 	protected static function isAjax() {
@@ -107,15 +108,16 @@ class App_Stat
 	 * Вывод результатов по базе данных
 	 */
 	protected static function showDbInfo()
-	{
+	{		
 		$db = Zend_Db_Table::getDefaultAdapter();
 		if (!$db instanceof Zend_Db_Adapter_Abstract)
 			return;
+			
 		$profiler   = $db->getProfiler();
 		$totalTime  = $profiler->getTotalElapsedSecs();
 		$queryCount = $profiler->getTotalNumQueries();
 		
-		$profiles = $profiler->getQueryProfiles();
+		$profiles = $profiler->getQueryProfiles();		
 		if (!empty($profiles))
 		{
 			echo '<div style="margin:15px 25px;float:left;padding:5px;text-align:left; background-color:#f0f0f0; border:1px solid #aaaaaa">';

@@ -14,10 +14,12 @@ class App_Controller_Action_Helper_Check404 extends Zend_Controller_Action_Helpe
         } else {
             $throw = !empty($value) ? false : true;
         }
-
-        if ($throw) 
+        
+        if ($throw) {
+        	$this->getRequest()->setDispatched(false);
             throw new Zend_Controller_Action_Exception($message, 404);
-
+        }
+        
         return true;
     }
 }

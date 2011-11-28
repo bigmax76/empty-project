@@ -31,7 +31,7 @@ class App_Controller_Plugins_Acl extends Zend_Controller_Plugin_Abstract
 			$view = App_Resource::get('view');
 			$request->setModuleName('default');		
             $request->setControllerName('auth');     // auth
-            $request->setActionName('openid-login'); // openid-login
+            $request->setActionName('login'); // openid-login
             $request->setParam('back_url',$view->baseUrl() . '/admin');
 		}
 	}
@@ -46,9 +46,9 @@ class App_Controller_Plugins_Acl extends Zend_Controller_Plugin_Abstract
 	    $user = Model_User_Service::getCurrent();
 	    
 	    $role = 'guest';
-	    if ($user->is_staff) 
-	    	$role = 'staff';
-	    if ($user->is_superuser)
+	    if ($user->group->id == 2) 
+	    	$role = 'memeber';
+	    if ($user->isAdmin())
 	    	$role = 'admin';
 	    if(!in_array($role, $this->application_role))
 	    	$role = 'guest';	    

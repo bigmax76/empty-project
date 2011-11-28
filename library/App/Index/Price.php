@@ -5,7 +5,7 @@
  */
 class App_Index_Price extends App_Index_Abstract 
 {	
-	protected $_indexDir = '/data/index/price';	   
+	protected $_indexDir = '/data/index/price';
     
     /**
      * Возвращаем подлежащие индексции элементы
@@ -17,7 +17,7 @@ class App_Index_Price extends App_Index_Abstract
     }
     
 	/**
-	 * Создание Lucen документа на осниве переданного массива
+	 * Создание Lucen документа на оснoве переданного массива
 	 */
 	protected function getLuceneDoc(array $price)
     {

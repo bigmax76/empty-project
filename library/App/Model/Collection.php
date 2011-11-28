@@ -9,13 +9,15 @@ abstract class App_Model_Collection implements Iterator, Countable, ArrayAccess
 	protected $object  = null;      // массив готовых объектов
 	
 	function __construct($data = null)
-	{
+	{		
 		if (null === $this->_className) 
 			throw new Exception('Не задан класс экземпляра коллекции');	
 					
 		if ($data instanceof Zend_Paginator) {	
-			// TODO перенести создание объектов в getRow()		
-			$rows = $data->getCurrentItems()->toArray();			
+			// TODO перенести создание объектов в getRow()
+			$rows = $data->getCurrentItems();
+			if (method_exists($rows,' toArray'))
+				$rows = $rows->toArray();
 			$id = 0;
 			foreach ($rows as $row) {
 				$this->object[$id] = new $this->_className($row);
@@ -124,6 +126,9 @@ abstract class App_Model_Collection implements Iterator, Countable, ArrayAccess
     public function offsetGet($offset) {
     	return $this->getRow($offset);
     }
-
+    
+    public function getData() {
+    	return $this->data;
+    }
     
 }

@@ -23,13 +23,13 @@ abstract class App_Model_Zend_NestedSet_DbTable extends Zend_Db_Table_Abstract
         $result = $stmt->fetchAll();
   	    
         return $result;
-    }    
+    }
     
     /**
      * Извлечение дерева потомков (включая текущую категорию)
      */
     public function getChildren($category)
-    {    
+    {        	
         // оригинальный sql из статьи  	
   	    $sql = 'SELECT id,name,level FROM my_tree WHERE left_key >= [left_key] AND right_key <= [right_key] ORDER BY left_key'; 
   	   
@@ -37,7 +37,8 @@ abstract class App_Model_Zend_NestedSet_DbTable extends Zend_Db_Table_Abstract
         $select ->from($this->_name)
                 ->where('left_key  > ?' ,$category->left_key)
                 ->where('right_key < ?' ,$category->right_key)
-        		->order('left_key ASC');  // порядок сортировки       
+        		->order('left_key ASC');  // порядок сортировки     
+       
         // Выполнение запроса
         $stmt = $this->getAdapter()->query($select);
         // Получение данных в виде ассоциативного массива
@@ -111,7 +112,7 @@ abstract class App_Model_Zend_NestedSet_DbTable extends Zend_Db_Table_Abstract
 	    	return $rowset->current(); 
     	}
     	// или характеристики корня
-    	return $this->getRoot();    	
+    	return $this->getRoot();
     }
     
     /**
@@ -119,20 +120,19 @@ abstract class App_Model_Zend_NestedSet_DbTable extends Zend_Db_Table_Abstract
      */
     protected function getRoot()
     {
-    	$sql = 'Select MAX(right_key) AS right_key, 0 AS left_key, 0 AS level From  ' . $this->_name;
-    	//$db     = Zend_Registry::get('db');	
-    	//$db = App_Resource::getResource('db');
-    	$db = $this->getAdapter();
+    	$sql = 'Select MAX(right_key) AS right_key, 0 AS left_key, 0 AS level From  ' . $this->_name;    	
+    	$db  = $this->getAdapter();
     	
     	$db->setFetchMode(Zend_Db::FETCH_OBJ); // извлекаем данные в виде объектов
         $stmt   = $db->query($sql);
         $result = $stmt->fetchAll();
         $result = $result['0'];
         
-        if ($result->right_key == null) 
-        	$result->right_key = 1;
-        //echo '<pre>'; print_r($result); echo '</pre>';
-        return $result; 	    	
+        if ($result->right_key == null)
+        	$result->right_key = 0;        
+        $result->right_key++;
+       
+        return $result;  	
     }
     
     /**
@@ -201,6 +201,7 @@ abstract class App_Model_Zend_NestedSet_DbTable extends Zend_Db_Table_Abstract
         		                 'name < "' . $node->name . '" )' . ' AND ' . 
                                   'id != "' . $node->id . '" ' .
                         'ORDER BY sort DESC, name DESC';
+        //echo $sql; 
         $stmt = $db->query($sql);               
     	$result = $stmt->fetch();  // получаем первую запись
     	//echo '<pre>'; print_r($result);echo'</pre>';

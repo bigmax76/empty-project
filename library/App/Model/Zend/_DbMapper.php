@@ -1,35 +1,24 @@
 <?php
-abstract class App_Model_Abstract_Mapper
+abstract class App_Model_Zend_DbMapper
 {
 	protected $_dbTable;
-	protected $_dbTableName = Null;	
+	protected $_dbTableName = Null;
 	
 	abstract protected function setOptions(App_Model_Abstract $obj, $data);
 	
     abstract protected function getOptions(App_Model_Abstract $shop);  
 	
-    /**
-     * Чтобы предотвратить возможные утечки памяти 
-     */
-    public function __destruct(){
-        unset($this->_dbTable);
-        unset($this->_dbTableName);
-    }
-
-	/**
-	 * @return Zend_Db_Table
-	 */
     public function getDbTable()
     {
         if (null === $this->_dbTable) {
-            $this->setDbTable($this->_dbTableName);
-        }        
+        	$table = App_Application_Resource_Container::getClass($this->_dbTableName);
+        	$this->setDbTable($table);
+        }
         return $this->_dbTable;
     }
     
     public function setDbTable($dbTable)
-    {   
-    	
+    {
         if (is_string($dbTable)) {
             $dbTable = new $dbTable();
         }
@@ -43,27 +32,14 @@ abstract class App_Model_Abstract_Mapper
     /**
      * Извлечение объекта по первичному ключю
      */
-    public function getById($id, $obj)
+    public function getById($id, App_Model_Abstract $obj)
 	{		
 		$result = $this->getDbTable()->find($id);
-	    if (0 == count($result)) {
+		if (0 == count($result)) {
             return Null;
         }
 		$data = $result->current();		
 		$this->setOptions($obj, $data);		      
-	}
-
-	/**
-     * Извлечение объекта по первичному ключю
-     */
-    public function getByPK($key, $obj)
-	{
-		$result = $this->getDbTable()->find($key);
-	    if (0 == count($result)) {
-            return Null;
-        }
-		$data = $result->current();
-		$this->setOptions($obj, $data);
 	}
 	
     /**
@@ -93,27 +69,33 @@ abstract class App_Model_Abstract_Mapper
 		// до версии php 5.2.9 может вызывать ошибку когда в запросе присутствует одновременно ' и ?
 		$where  = $this->getDbTable()->getAdapter()->quoteInto("$field_name = ?", $value);
 		$result = $this->getDbTable()->fetchRow($where);
-		
 	    if (0 == count($result)) {
             return Null;
         }
 		$this->setOptions($obj, $result);		      
 	}
-		
+
+	/**
+     * у текущего маппера работает только для id 
+     */
+    public function getByRange($range, $field = 'id') {
+		return $this->getDbTable()->find($range)->toArray();
+	}
+	
     /**
      *
      */
     public function save(App_Model_Abstract $obj)
     {
     	$data = $this->getOptions($obj);             
-        if (null == ($id = $obj->getId()))
-        {
-            unset($data['id']);                     
-            //echo '<pre>'; print_r($data); echo '</pre>';          
-            return $this->getDbTable()->insert($data);                                    
-        } 
-        else {        	
-            $result = $this->getDbTable()->update($data, array('id = ?' => $id));             
+        if (null == ($id = $obj->id)) {
+            unset($data['id']);
+            $id = $this->getDbTable()->insert($data);
+            $obj->id = $id;
+            return $id;
+        }
+        else {
+            $this->getDbTable()->update($data, array('id = ?' => $id));
             return $id;                      
         }  
     }
@@ -125,7 +107,7 @@ abstract class App_Model_Abstract_Mapper
 	}
     
     /**
-     * преобразуем т объект в массив
+     * преобразуем объект в массив
      */
     public function toArray(App_Model_Abstract $obj)
     {    	

@@ -13,7 +13,7 @@ class App_Controller_Plugins_LanguageSwitcher extends Zend_Controller_Plugin_Abs
 			//echo '<pre>$post'; print_r($post); echo '</pre>';
 			if (isset($post[$options->param])) {
 				$locale = $post[$options->param];				
-				$translate->setLocale($locale);				
+				$translate->setLocale($locale);
 				$session->locale = $locale;				
 			}						
 		}

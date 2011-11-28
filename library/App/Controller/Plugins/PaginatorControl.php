@@ -7,7 +7,7 @@ class App_Controller_Plugins_PaginatorControl extends Zend_Controller_Plugin_Abs
 {
 	public function preDispatch(Zend_Controller_Request_Abstract $request)
 	{		
-		$config    = Zend_Registry::get('config'); 
+		$config    = App_Resource::get('config'); 
 		$options   = $config->resources->frontController->plugins->PaginatorControl->options;
 		
 		// получаем данные ini файла 

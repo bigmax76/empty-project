@@ -26,11 +26,18 @@ class App_Controller_Action_Helper_Placeholder extends Zend_Controller_Action_He
     	    	echo $this->view->render($script);
     	    } catch (Exception $e) {
     	    	$this->view->placeholder($this->placeholder)->captureEnd();
-    	    	throw $e;    	    	
+    	    	throw $e;
     	    }
-    	    $this->view->placeholder($this->placeholder)->captureEnd();    	
+    	    //$this->view->placeholder($this->placeholder)->captureEnd();    	
     	$this->view->placeholder($this->placeholder)->captureEnd();    	
     }
+    
+    public function addHtml($html)
+    {
+    	$this->view->placeholder($this->placeholder)->captureStart();
+    	    echo $html;    	
+    	$this->view->placeholder($this->placeholder)->captureEnd();
+    } 
 
     public function component($name) {
     	$this->view->placeholder($this->placeholder)->captureStart();

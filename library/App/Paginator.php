@@ -8,9 +8,9 @@ class App_Paginator extends Zend_Paginator
 		self::$current_page = (int)$page;
 	}
 	
-	 public function __construct($adapter)
-	 {
-	 	parent::__construct($adapter);
+	public function __construct($adapter)
+	{
+	    parent::__construct($adapter);
 	 	$this->setCurrentPageNumber(self::$current_page);
-	 }
+    }
 }

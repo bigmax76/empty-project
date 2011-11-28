@@ -8,8 +8,7 @@ abstract class App_Model_Zend_NestedSet_Abstract extends App_Model_Abstract
 	protected $_id;                  // id узла 
 	protected $_parent_id;           // id родительского узла
 	protected $_name;                // имя узла	
-	protected $_sort;                // индекс сортировки в пределах родительского узла
-	
+	protected $_sort;                // индекс сортировки в пределах родительского узла	
 	protected $_left_key;            // левый ключ
 	protected $_right_key;           // правый ключ
 	protected $_level;               // уровень вложености
@@ -19,13 +18,9 @@ abstract class App_Model_Zend_NestedSet_Abstract extends App_Model_Abstract
 	 */
 	protected $_parent = null;       // родительский узел 	
 	
-	
-	/**
-	 * @return unknown_type
-	 */
 	public function __construct(array $options = null)
 	{
-		parent::__construct($options);	    
+		parent::__construct($options);
 	}
 	
 	/**
@@ -35,9 +30,7 @@ abstract class App_Model_Zend_NestedSet_Abstract extends App_Model_Abstract
 	public function save()
 	{
 		// если это новый узел 
-		if ($this->id == null)
-		{ 		
-			//echo '<pre>'; print_r($this->getMapper()->getDbTable()); echo '</pre>'; 		
+		if ($this->id == null) {	
 			$this->getMapper()->getDbTable()->insertNode($this);			
 		}	
 		// обновление существующего узла 	
@@ -54,17 +47,18 @@ abstract class App_Model_Zend_NestedSet_Abstract extends App_Model_Abstract
 			      || $old->name != $this->name       // изменено название
 			      || $old->sort != $this->sort       // изменен индекс сортировки
 			) 
-			{					
+			{		
+								
 				// проверяем корректность задания родительской категории				
 				if(!$this->checkParent())
-				{
+				{			
+					echo 'родитель задан не корректно';		
 					// если родитель задан не корректно - указываем старого
 					$this->parent_id = $old->parent_id;
 					// обнуляем загруженый косяк и загружаем новое значение
-					$this->_parent = null; 
-										
+					$this->_parent = null;										
 				};				
-							
+						
 				// подотавливаем переменные для запроса
 				// ...
 				$param = array();
@@ -73,23 +67,27 @@ abstract class App_Model_Zend_NestedSet_Abstract extends App_Model_Abstract
 				$param['right_key'] = $this->right_key;
 				$param['level_up']  = $this->getParentNode()->level; 
 				$param['right_key_near'] = $this->getRightKeyNear(); // правый ключ узла за которым мы вставляем наш узел
-				$param['skew_level'] = $param['level_up'] - $param['level'] +1;
-				$param['skew_tree']  = $param['right_key'] - $param['left_key'] +1;	
+				$param['skew_level'] = $param['level_up'] - $param['level'] + 1;
+				$param['skew_tree']  = $param['right_key'] - $param['left_key'] + 1;	
 				
+				//echo '<pre>$param'; print_r($param); echo '</pre>';
+				//die;
 				// вначале сохраняем пользовательские данные				
 				$result = parent::save();
 				// и выполняем преобразования над деревом
 				if ($param['right_key_near'] > $this->right_key)
 				{
+					//echo 'перемещение вниз по дереву';
 					// перемещение вниз по дереву	
 					$param['skew_edit'] = $param['right_key_near'] - $param['left_key'] + 1 - $param['skew_tree'];		
-					$this->getMapper()->getDbTable()->moveDown($this, $param);
+					//$this->getMapper()->getDbTable()->moveDown($this, $param);
 				}
 				else 
 				{
+					//echo 'перемещение вверх по дереву';
 					// перемещение вверх по дереву	
 					$param['skew_edit']  = $param['right_key_near'] - $param['left_key'] + 1;					
-					$this->getMapper()->getDbTable()->moveUp($this, $param);
+					//$this->getMapper()->getDbTable()->moveUp($this, $param);
 				}	
 				return $result;			
 			}					
@@ -145,7 +143,6 @@ abstract class App_Model_Zend_NestedSet_Abstract extends App_Model_Abstract
 		return $this->getMapper()->getDbTable()->getParents($this);
 	}
 	
-	
     /**
 	 * Проверка заданной родительской категории на корректность
 	 */
@@ -153,12 +150,14 @@ abstract class App_Model_Zend_NestedSet_Abstract extends App_Model_Abstract
 	{		
 		// указанный parent_id не должен являтся потомком текущего узла
         $children = $this->getChildren();
+        
         foreach ($children as $node)
         {
         	if ($this->getParentNode()->id == $node['id']) return false;
         }
         return true;		
 	}
+
 	/**
 	 * Извлечение дерева разделов (категорий)
 	 */
@@ -180,7 +179,6 @@ abstract class App_Model_Zend_NestedSet_Abstract extends App_Model_Abstract
 		return $this->getMapper()->getDbTable()->getChildren($this);
 	}
 	
-	
     public function getElements()
 	{				
 		return $this->getMapper()->getDbTable()->getChildren($this);
@@ -190,10 +188,6 @@ abstract class App_Model_Zend_NestedSet_Abstract extends App_Model_Abstract
     // сеттеры и геттеры  
     //////////////////////
     
-    /**
-     * @param unknown_type $value
-     * @return unknown_type
-     */
     public function setId($value)
     {
         $this->_id = (int)$value;    
@@ -205,10 +199,6 @@ abstract class App_Model_Zend_NestedSet_Abstract extends App_Model_Abstract
         return $this->_id;
     }
 	
-    /**
-     * @param unknown_type $value
-     * @return unknown_type
-     */
     public function setParent_id($value)
     {
         $this->_parent_id = (int)$value;    
@@ -220,23 +210,17 @@ abstract class App_Model_Zend_NestedSet_Abstract extends App_Model_Abstract
         return $this->_parent_id;
     }
     
-    /**
-     * @param unknown_type $code
-     * @return unknown_type
-     */
     public function setName($value)
     {
         $this->_name = (string) $value;
         return $this;
     }
+
     public function getName()
     {
         return $this->_name;
     }
-	
-    /**
-     * Индекс сортитровки в пределах родительского узла
-     */
+   
     public function setSort($value)
     {
         $this->_sort = (int)$value;    
@@ -247,13 +231,7 @@ abstract class App_Model_Zend_NestedSet_Abstract extends App_Model_Abstract
     {
         return $this->_sort;
     }
-	
-	
-	
-    /**
-     * @param unknown_type $value
-     * @return unknown_type
-     */
+
     public function setLeft_key($value)
     {
         $this->_left_key = (int)$value;    
@@ -265,10 +243,6 @@ abstract class App_Model_Zend_NestedSet_Abstract extends App_Model_Abstract
         return $this->_left_key;
     }
     
-    /**
-     * @param unknown_type $value
-     * @return unknown_type
-     */
     public function setRight_key($value)
     {
         $this->_right_key = (int)$value;    
@@ -280,10 +254,6 @@ abstract class App_Model_Zend_NestedSet_Abstract extends App_Model_Abstract
         return $this->_right_key;
     }
     
-    /**
-     * @param unknown_type $value
-     * @return unknown_type
-     */
     public function setLevel($value)
     {
         $this->_level = (int)$value;    
@@ -294,7 +264,5 @@ abstract class App_Model_Zend_NestedSet_Abstract extends App_Model_Abstract
     {
         return $this->_level;
     }
-	
-	
-	
+
 }

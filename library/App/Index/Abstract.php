@@ -11,19 +11,21 @@ abstract class App_Index_Abstract
 	 * Задается в потомках
 	 * @var unknown_type
 	 */
-	protected $_indexDir = Null;
+	protected $_indexDir;
 	
 	/**
 	 * путь к папке с файлами поискового индекса
 	 * @var unknown_type
 	 */
-	protected $_indexPath = Null;
+	protected $_indexPath;
 		
+	protected $_index;
+	
 	/**
 	 * Стеммер (объект извлекающий основу слова)
 	 * @var unknown_type
 	 */
-	protected $_stemmer = Null;     
+	protected $_stemmer;
 	
 	/**
 	 * Метод должен вернуть массив элементов подлежащих индексации
@@ -35,20 +37,17 @@ abstract class App_Index_Abstract
 	 * готовый к индексации Zend_Search_Lucene_Document
 	 * (в соответствии с логикой приложения)	 
 	 */
-	abstract protected function getLuceneDoc(array $element); 
+	abstract protected function getLuceneDoc($element); 
 	
 	public function __construct()  
 	{
-		if ($this->_indexDir == Null)
-		{
+		if ($this->_indexDir == Null) 
 			throw new Exception('Не указана папка содержащая поисковый индекс ');
-		}
-		else
-		{
-			$this->_indexPath = APPLICATION_PATH . $this->_indexDir;
-		}				
-		set_time_limit(900);
 		
+		$this->_indexPath = APPLICATION_PATH . $this->_indexDir;
+					
+		set_time_limit(900);
+				
 		// устанавливаем кодировку строки запроса (Важно!!!)
 		Zend_Search_Lucene_Search_QueryParser::setDefaultEncoding('utf-8');
 		// устанавливаем  UTF-8 совместимый анализатор текста не чувствительный к регистру
@@ -58,8 +57,7 @@ abstract class App_Index_Abstract
     public function getStemmer()
     {
     	//сюда позже можно дабавить выбор стеммера соответствующему нужному языку 
-        if (null === $this->_stemmer)
-        {       	
+        if (null === $this->_stemmer)  {       	
             $this->_stemmer = new App_Search_Stemmer_Ru();
         }        
         return $this->_stemmer;
@@ -70,7 +68,7 @@ abstract class App_Index_Abstract
 	 * @param $query search query
 	 * @return array Zend_Search_Lucene_Search_QueryHit
 	 */
-	public function find($query) 
+	public function find($query)
 	{
 		try{
 			$index = Zend_Search_Lucene::open($this->_indexPath);
@@ -78,9 +76,9 @@ abstract class App_Index_Abstract
 			echo "Ошибка:{$e->getMessage()}";
 		}
 		
-		$query = $this->parse($query);	    
+//		$query = $this->parse($query);	    
 		
-		return $index->find($query);		
+		return $index->find($query);
 	}
 	
 	/**
@@ -108,14 +106,16 @@ abstract class App_Index_Abstract
 	/**
 	 * добавление к индексу отдельного элемента
 	 */
-	public function add(array $element)
+	public function add(array $element, $auto_commit = false)
 	{
 	    //пробуем создать поисковый индекс 
 	  	try {
 	  		$index = Zend_Search_Lucene::open($this->_indexPath);
 	  		$doc = $this->getLuceneDoc($element);				
 			$index->addDocument($doc);
-			//$index->optimize();	  		
+			if ($auto_commit)
+			    $index->commit();
+			//$index->optimize();
 	  	} 
 	  	catch (Zend_Search_Lucene_Exception $e) {
 	  	    echo "<p> Ошибка индексации {$e->getMessage()}</p>";
@@ -131,15 +131,17 @@ abstract class App_Index_Abstract
 	  		$index = Zend_Search_Lucene::open($this->_indexPath);
 		  	
 	  		// находим и удаляем старый документ	    	   	
-			$hits = $index->find('obj_id:' . $id);
+			$hits = $index->find('obj_id:"' . $id . '"');
 			//echo '<pre>'; print_r($hits); echo '</pre>';		
-			foreach ($hits as $hit) {						
+			foreach ($hits as $hit) {
+				//echo '<pre>$hit'; print_r($hit); echo '</pre>';
 			    $index->delete($hit->id);
 			}	  		
 	  	} 
 	  	catch (Zend_Search_Lucene_Exception $e) {
 	  	    echo "<p> Ошибка индексации {$e->getMessage()}</p>";
 	  	}	
+	  
 	}
 	
     /**
@@ -166,6 +168,7 @@ abstract class App_Index_Abstract
 			$cnt = 0; 
 			// получаем массив элементов подлежащих индексации
 			$elements = $this->getElements();
+					
 			foreach ($elements as $element) 
 			{
 				$doc = $this->getLuceneDoc($element);				

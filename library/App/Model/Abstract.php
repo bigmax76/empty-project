@@ -7,8 +7,8 @@
  */
 abstract class App_Model_Abstract
 {   
-	protected $_mapper;
-
+	protected static $_mapper;
+	 
     /**
 	 * Конструктор объекта модели. Заполняет поля объекта данными из переданного массива.
 	 * (CRUD - Create)
@@ -18,8 +18,7 @@ abstract class App_Model_Abstract
 	public function __construct($options = null)
     {   
         if (!empty($options)) 
-            $this->setOptions($options);
-        
+            $this->setOptions($options);        
     }
     
     /**
@@ -44,12 +43,19 @@ abstract class App_Model_Abstract
     public function __get($name)
     {
         $method = 'get' . $name;
-        if (('mapper' == $name) || !method_exists($this, $method)) {        	
+        if (('mapper' == $name) || !method_exists($this, $method)) {
             throw new Exception('Invalid model property: ' . $name);
         }
         return $this->$method();
     }
-   
+
+    public function __isset($name) {
+    	// Функция empty() вначале вызывает __isset(), 
+        // и только если она возвращает true следует вызов __get().
+    	$getter = 'get' . ucfirst($name);
+        return method_exists($this, $getter) && !is_null($this->$getter());
+    }
+    
     /**
      * Заполняет поля объекта данными из массива
      * функция в цикле добавляет приставку "set" к ключам массива
@@ -59,7 +65,10 @@ abstract class App_Model_Abstract
      * @param array $options
      * @return unknown
      */
-    public function setOptions(array $data) {
+    public function setOptions($data) {
+    	if ($data instanceof Zend_Db_Table_Row)
+    	    $data->toArray();
+    	
         $methods = get_class_methods($this);
         foreach ($data as $key => $value) {
             $method = 'set' . ucfirst($key);
@@ -68,7 +77,7 @@ abstract class App_Model_Abstract
             }
         }
         return $this;
-    }   
+    }
 
     /**
      * Функция позволяет задать маппер отличный от используемого по умолчанию 
@@ -76,8 +85,13 @@ abstract class App_Model_Abstract
      * @param unknown_type $mapper
      * @return unknown
      */
-    public function setMapper(App_Model_Abstract_Mapper $mapper) {
-        $this->_mapper = $mapper;
+    public function setMapper($mapper) 
+    {
+        if (is_string($mapper))
+            $mapper = new $mapper();
+        if (!$mapper instanceof App_Model_Abstract_Mapper)
+            throw new Exception('Invalid mapper data gateway provided');
+        static::$_mapper = $mapper;
         return $this;
     }
 
@@ -87,35 +101,30 @@ abstract class App_Model_Abstract
      * @param unknown_type $mapper
      * @return unknown
      */
-    public function getMapper1() {
-    	if (is_object(static::$_mapper)) {
-    	    echo 'уже объект 11111111111111111111111111111111111111';
-    	} else {
-    		echo 'еще не объект - 2222222222222222222222222222222222';
-    	}
-        if (is_string(static::$_mapper)) {
-	        static::$_mapper = App_Resource_Container::getClass(static::$_mapper);
+    public function getMapper() {
+        if (is_string(static::$_mapper)) { 
+	        static::$_mapper = new static::$_mapper();           
         }
-        if (empty(static::$_mapper))
-        	throw new Exception('Не задан маппер для модели'); 
-        
         return static::$_mapper;
     }
-    
-    public function getMapper() {
-        if (is_string($this->_mapper)) {	        
-	        $this->_mapper = App_Resource_Container::getClass($this->_mapper);
-        }
-        return $this->_mapper;
-    }    
-    
+        
     /**
      * Возвращает объект по его id
-     * @param unknown_type $id
-     * @return unknown
+     * @param int $id
+     * @return self
      */
     public function getById($id) {
         $this->getMapper()->getById($id, $this);
+        return $this;
+    }
+
+	/**
+     * Возвращает объект по unique key
+     * @param array $key
+     * @return self
+     */
+	public function getByPK($key) {
+        $this->getMapper()->getByPK($key, $this);
         return $this;
     }
 
@@ -133,14 +142,13 @@ abstract class App_Model_Abstract
      	$this->getMapper()->getByField($field, $value, $this);
     	return $this;
     }
-   
-    public function getByRange1(array $range, $field = 'id') {
-     	return $this->getMapper()->getByRange($range, $field);
+    
+    public static function getByRange(array $range = array(), $field = 'id') {
+     	return self::getMapper()->getByRange($range, $field);
     }
     
-    public static function getByRange(array $range, $field = 'id') {
-    	$mapper = self::getMapper();    	
-     	return self::getMapper()->getByRange($range, $field);
+    public function getByRange1(array $range, $field = 'id') {
+     	return $this->getMapper()->getByRange($range, $field);
     }
     
     /**
@@ -148,33 +156,24 @@ abstract class App_Model_Abstract
      * @return unknown_type
      */
     public function save() {
-        $this->beforeSave();
-        $id = $this->getMapper()->save($this);
-        $this->afterSave();
-        return $id;
+        return $this->getMapper()->save($this);
     }
     
     public function delete() {
 		return $this->getMapper()->delete($this->id);
 	}
-
+	
+	public function insertIgnore() {
+		return $this->getMapper()->insertIgnore($this);
+	}	
+	
 	public function toArray() {
 		return $this->getMapper()->toArray($this);
 	}
 
-    public function __toString() {
+    public function __toString()
+    {
     	$dump = print_r($this->toArray(), true);    	
 	    return '<pre>' . $dump . '</pre>';
     }
-
-    public function __isset($name) {
-    	// Функция empty() вначале вызывает __isset(), 
-        // и только если она возвращает true следует вызов __get().
-    	$getter = 'get' . ucfirst($name);
-        return method_exists($this, $getter) && !is_null($this->$getter());
-    }
-    
-	protected function beforeSave(){}
-    protected function afterSave() {}
-          
 }

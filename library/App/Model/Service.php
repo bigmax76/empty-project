@@ -1,15 +1,94 @@
 <?php
 class App_Model_Service
-{	
-	protected static $_dbTableName;
-    protected static $_dbTable;      // !!!нужно прописывать в дочерних классах для корректного срабатывания getDbTable()
-	
-	public static function getDbTable() {
-		if (null === static::$_dbTable) {			
-			static::$_dbTable = new static::$_dbTableName;
-		}
-		return static::$_dbTable;
+{
+	/**
+	 * @var Zend_Db_Table
+	 */
+    protected static $_dbTable;
+    protected static $_multiOptions;// = array();
+
+	/**
+	 * @static
+	 * @return Zend_Db_Table
+	 */
+    public static function getDbTable() {
+    	if (is_string(static::$_dbTable)) { 
+	        static::$_dbTable = new static::$_dbTable();           
+        }
+        return static::$_dbTable;	
 	}
+	
+    public static function getList(App_Model_Filter $filter = null, $page = 1, $perPage = 1000000)
+	{
+		$select  = self::getSelect($filter);
+		$adapter = new Zend_Paginator_Adapter_DbTableSelect($select);
+		$paginator = new Zend_Paginator($adapter);
+		$paginator->setCurrentPageNumber($page)
+		          ->setItemCountPerPage($perPage);
+		return $paginator;
+//		return self::getDbTable()->fetchAll($select)->toArray();
+	}
+	
+    public static function fetchAll(App_Model_Filter $filter = null)
+	{
+		$select  = self::getSelect($filter);		
+		return self::getDbTable()->fetchAll($select)->toArray();
+	}
+	
+    public static function fetchRow(App_Model_Filter $filter = null)
+	{
+		$select  = self::getSelect($filter);
+		$result = self::getDbTable()->fetchRow($select);
+		if (!empty($result))
+		    return $result->toArray();
+		return array();		
+	}
+	
+	public static function delete(App_Model_Filter $filter = null)
+	{
+		$select  = self::getSelect($filter);
+		self::getDbTable()->delete($select->getPart('where'));
+	}
+	
+	/**
+	 * Возвращает объект Zend_Db_Table_Select соответствующий переданному фильтру
+	 */
+	public static function getSelect(App_Model_Filter $filter = null)
+	{
+		$db = self::getDbTable();
+		$select  = $db->select();
+		
+	    if (!empty($filter)) {
+			$params = $filter->getParams();			
+			foreach ($params as $param) {				
+				$select->where($db->getAdapter()->quoteIdentifier($param['name']) . ' ' . $param['operator'], $param['value']);
+			}
+			$sorts = $filter->getSorts();
+			if (!empty($sorts))
+				$select->order($sorts);			
+		}
+		return $select;
+	}
+	
+	public static function getByRange($range, $field = null)
+    {   
+    	// TODO не факт что корректно работает если $rаnge instanceof Zend_Paginator
+    	if (!empty($field)) {
+    		$result = array();
+    		foreach ($range as $row){
+    			$result[] = $row[$field];
+    		}
+    		$range = $result;
+    	}    	
+    	if (empty($range))
+    		return array();
+    	//ksort($ids);
+    	$db = self::getDbTable();
+    	$select = $db->select();
+    	$select->where('id in (?)', $range);
+    	$result = $db->fetchAll($select)->toArray();    	
+    	return $result;
+    }
 	
     public static function __callStatic($method, $params)
     {
@@ -43,4 +122,25 @@ class App_Model_Service
        
         return $cache->call(array(get_called_class(), $method), $params);
     }
+    
+   	/**
+     * Возвращает подготовленный массив для исользования
+     * совместно с Zend_Form_Element_Select
+     */
+	public static function getMultiOptions($first_row = null)
+	{
+    	if (!isset(self::$_multiOptions[get_called_class()]))
+    	{   		
+    		$result = array();
+	    	$rows = self::getList();
+	    	foreach ($rows as $row) {
+	    		$result[$row['id']] = $row['name'];
+	    	}
+	    	if (!empty($first_row))
+	    	    $result['0'] = '------';
+			ksort($result);
+			self::$_multiOptions[get_called_class()] = $result;
+    	}		
+    	return self::$_multiOptions[get_called_class()];
+	}    
 }
